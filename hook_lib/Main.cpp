@@ -865,6 +865,18 @@ bool DDL_SetUInt_Detour(const DDLState* state, DDLContext* ddlContext, unsigned 
 	return ddl_setuint.stub<bool>(state, ddlContext, val);
 }
 
+//UserInfo Crash fix
+utils::hook::detour sv_updateuserinfo_f;
+void SV_UpdateUserinfo_f_Detour(__int64 cl) {
+	auto SV_Cmd_Argv = reinterpret_cast<char* (*)(int)>(0x141298B10_g);
+	auto Info_ValueForKey = reinterpret_cast<char* (*)(const char*, const char*)>(0x1413F2A10_g);
+	// more checks can be added here (it's patched in current mw19, vanguard, and mwii, could probably find the actual fix there)
+	if (!strlen(Info_ValueForKey(SV_Cmd_Argv(1), "platform"))) {
+		return;
+	}
+	sv_updateuserinfo_f.stub<void>(cl);
+}
+
 void* exception_handler_handle;
 BOOL WINAPI DllMain(HMODULE hModule, DWORD Reason, LPVOID lpVoid) {
 	g_Addrs.ModuleBase = (uintptr_t)(GetModuleHandle(0));
@@ -949,6 +961,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD Reason, LPVOID lpVoid) {
 
 		db_loadxfile.create(0x1411A79F0_g, DB_LoadXFile_Detour);
 		CL_TransientsMP_ProcessLoadingQueue.create(0x1415F7BF0_g, CL_TransientsMP_ProcessLoadingQueue_Detour);
+		sv_updateuserinfo_f.create(0x14136D0C0_g, SV_UpdateUserinfo_f_Detour);
 
 		lui_cod_registerdvars.create(0x1419D4500_g, LUI_CoD_RegisterDvars_Detour);
 		net_outofbanddata.create(0x1412BB350_g, NET_OutOfBandData_Detour);
